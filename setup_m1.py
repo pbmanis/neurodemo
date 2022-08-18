@@ -11,7 +11,8 @@ APP = ['demo.py']
 DATA_FILES = []
 OPTIONS = {
     'iconfile':'icon.icns',
-    'plist': {'CFBundleShortVersionString':'1.1.0',}
+    'plist': {'CFBundleShortVersionString':'1.1.0',},
+    'arch': "arm64",
 }
 
 
@@ -22,7 +23,7 @@ setup(
     setup_requires=['py2app'],
         entry_points={
         'console_scripts': [
-            'demo=demo:main',
+            'neurodemo=demo:main',
         ]
         }
 )
