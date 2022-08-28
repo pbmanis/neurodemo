@@ -15,8 +15,8 @@ create-dmg \
 --volicon "icon.icns" \
 --window-pos 200 120 \
 --window-size 600 300 \
---icon-size 64 \
---icon "demo.app" 128 128 \
+--icon-size 32 \
+--icon "demo.app" 32 32 \
 --hide-extension "demo_M1.app" \
 --app-drop-link 425 120 \
 "dist/demo_M1.dmg" \

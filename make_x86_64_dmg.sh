@@ -1,8 +1,11 @@
 # make x86_64 app
 #
+# The next 3 lines can be skipped if you
+# do not need to update the code
 rm -rf build dist
 python setup_x86_64.py py2app
 mkdir -p dist/dmg
+
 cp -r "dist/demo.app" dist/dmg
 # If the DMG already exists, delete it.
 test -f "dist/demo.dmg" && rm "dist/demo.dmg"
