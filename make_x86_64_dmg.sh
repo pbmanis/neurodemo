@@ -1,8 +1,11 @@
-# make Apple Silicon app
+# make x86_64 app
 #
-# rm -rf build dist
-# python setup_x86_64.py py2app
+# The next 3 lines can be skipped if you
+# do not need to update the code
+rm -rf build dist
+python setup_x86_64.py py2app
 mkdir -p dist/dmg
+
 cp -r "dist/demo.app" dist/dmg
 # If the DMG already exists, delete it.
 test -f "dist/demo.dmg" && rm "dist/demo.dmg"
@@ -16,7 +19,7 @@ create-dmg \
 --icon "demo.app" 32 32 \
 --hide-extension "demo.app" \
 --app-drop-link 425 120 \
-"dist/demo.dmg" \
+"dist/demo_x86_64.dmg" \
 "dist/dmg/"
 
 #hdiutil create -srcFolder dist -o dmg/neurodemo
