@@ -2,12 +2,14 @@
 test -f "dist/demo_x86_64.dmg" && rm "dist/demo_x86_64.dmg"
 sleep 3
 test -f "dist/neurodemo.dmg" && rm "dist/neurodemo.dmg"
-
+sleep 3
+test -f "dist/neurodemo_x86_64.dmg" && rm "dist/neurodemo_x86_64.dmg"
+sleep 3
 # make x86_64 app
 #
-# rm -rf build dist
-# python setup_x86_64.py py2app
-# mkdir -p dist/dmg
+rm -rf build dist
+python setup_x86_64.py py2app
+mkdir -p dist/dmg
 sleep 3
 
 cp -r "dist/neurodemo.app" dist/dmg
@@ -23,7 +25,7 @@ create-dmg \
 --hide-extension "neurodemo.app" \
 --app-drop-link 250 100 \
 --no-internet-enable \
-"dist/demo_x86_64.dmg" \
+"dist/neurodemo_x86_64.dmg" \
 "dist/dmg/"
 
 # hdiutil create -srcFolder dist -o dmg/neurodemo
