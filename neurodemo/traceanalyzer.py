@@ -180,7 +180,7 @@ class TraceAnalyzerParameter(pt.parameterTypes.GroupParameter):
     def measure_tauDecay(self, data, t):
         model = ExponentialModel()
         pars = model.guess(data-data[-1], x=t-t[0])
-        result = model.fit(data-data[-1], pars,  x=t-t[0])
+        result = model.fit(data-data[-1], pars,  x=t-t[0], nan_policy="propagate")
         return result.params['decay'] # fit[0][2]            
         
     def measure_tauRise4(self, data, t):
