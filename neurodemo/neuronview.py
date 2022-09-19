@@ -122,7 +122,7 @@ class NeuronView(pg.GraphicsLayoutWidget):
 
         # add a color bar scale on the right bottom. 
         
-        colormap2 = pg.colormap.get("CET-CBL2")
+        colormap2 = colormaps.CET_CBL2.convert_to_map()
         colormap2.reverse()
         self.colorbar = pg.ColorBarItem(values=(-150, 50), width=10, interactive=False,
             cmap = colormap, orientation='horizontal')
