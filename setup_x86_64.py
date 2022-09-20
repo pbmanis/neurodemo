@@ -7,7 +7,7 @@ Usage:
 
 from setuptools import setup
 
-APP = ['neurodemodemo.py']
+APP = ['neurodemo.py']
 DATA_FILES = []
 OPTIONS = {
     'iconfile':'icon.icns',
