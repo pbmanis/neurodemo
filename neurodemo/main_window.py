@@ -231,7 +231,7 @@ class DemoWindow(QtWidgets.QWidget):
                 self.neuron.cap = val
             elif param is self.params.child('Capacitance', 'Plot Current'):
                 if val:
-                    self.add_plot('soma.I', "Membrane Capactiance", 'I')
+                    self.add_plot('soma.I', "Membrane Capacitance", 'I')
                 else:
                     self.remove_plot('soma.I')
             elif param is self.params.child('Preset'):
