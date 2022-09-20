@@ -128,6 +128,8 @@ class TraceAnalyzerParameter(pt.parameterTypes.GroupParameter):
         self.child('Threshold').setOpts(visible=needs_threshold)
 
     def region_changed(self):
+        """If the region is changed, read the position and update the values
+        """        
         start, end = self.rgn.getRegion()
         self.sigTreeStateChanged.disconnect(self.tree_changed)
         try:
@@ -243,7 +245,34 @@ class EvalPlotter(QtGui.QWidget):
         self.y_units_text.editingFinished.connect(self.replot)
         self.hold_plot_btn.clicked.connect(self.hold_plot)
         self.clear_plot_btn.clicked.connect(self.clear_plot)
-        
+
+        # add a crosshair to the plot:
+        # cross hair
+        self.vLine = pg.InfiniteLine(angle=90, movable=False)
+        self.hLine = pg.InfiniteLine(angle=0, movable=False)
+        self.plot.addItem(self.vLine, ignoreBounds=False)
+        self.plot.addItem(self.hLine, ignoreBounds=False)
+        self.mouse_label = None  # don't add label until we have data
+
+    def mouse_moved_over_plot(self, evt):
+        if self.last_curve is None and self.held_index == 0:
+            return
+        pos = evt[0]
+        widget = pos.getViewWidget()
+        globalPos = pg.QtGui.QCursor.pos()
+        localPos = widget.mapFromGlobal(globalPos)
+        scenePos = pos.mapFromDevice(localPos)
+        viewPos = pos.vb.mapSceneToView(scenePos)
+        self.vLine.setPos(viewPos.x())
+        self.hLine.setPos(viewPos.y())
+        if self.mouse_label is None:
+            self.mouse_label = pg.TextItem(' ', color='c', anchor=[0.5, 1.0])
+            self.plot.addItem(self.mouse_label)
+        self.mouse_label.setPos(viewPos.x(), viewPos.y())
+        xt = f"<span style='font-size: 10pt; color:cyan'>x={viewPos.x():0.3e}</span style><br>"
+        yt = f"<span style='font-size: 10pt; color:cyan'>y={viewPos.y():0.3e}</span style>"
+        self.mouse_label.setHtml(xt + yt)
+    
     def update_data(self, data):
         self.data = data
         self.replot()
@@ -278,11 +307,15 @@ class EvalPlotter(QtGui.QWidget):
             
         if self.last_curve is None:
             self.last_curve = self.plot.plot(x, y, symbol='o', symbolBrush=(self.held_index, 10))
+            self.vLine.scene().sigMouseHover.connect(self.mouse_moved_over_plot)  # enable cursor
+            
         else:
             self.last_curve.setData(x, y)
-            
+        self.x_data = x
+        self.y_data = y  # for mouse   
         self.plot.setLabels(bottom=(xcode, self.x_units_text.text()),
                             left=(ycode, self.y_units_text.text()))
+
         
     def hold_plot(self):
         if self.last_curve is None:
@@ -294,5 +327,6 @@ class EvalPlotter(QtGui.QWidget):
     def clear_plot(self):
         self.held_plots = []
         self.held_index = 0
+        self.vLine.scene().sigMouseHover.disconnect(self.mouse_moved_over_plot)
         self.plot.clear()
         self.replot()
