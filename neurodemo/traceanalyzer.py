@@ -58,6 +58,7 @@ class TraceAnalyzer(QtGui.QWidget):
         fields = ['cmd'] + [anal.name() for anal in self.params.children()]
         data = np.empty(len(self.data), dtype=[(str(f), float) for f in fields])
         for i, rec in enumerate(self.data):
+            # print(rec)
             t, d, info = rec
             data['cmd'][i] = info['amp']
             for analysis in self.params.children():
@@ -149,13 +150,19 @@ class TraceAnalyzerParameter(pt.parameterTypes.GroupParameter):
         i2 = int(self['End'] / dt)
         data = data[self['Input']][i1:i2]
         t = t[i1:i2]
+        sign = 1.0
+        # print("Current input: ", self["Input"])
+        # print (data.names)
+        if self['Input'] in ["soma.IK.I", "soma.IKf.I", "soma.IKs.I", "soma.INa.I",
+             "soma.IH.I", "soma.INa1.I"]:
+             sign = -1.0   # flip sign of cation currents for display
         typ = self['Type']
         if typ == 'mean':
-            return data.mean()
+            return sign*data.mean()
         elif typ == 'min':
-            return data.min()
+            return sign*data.min()
         elif typ == 'max':
-            return data.max()
+            return sign*data.max()
         elif typ.startswith('spike'):
             spikes = np.argwhere((data[1:] > self['Threshold']) & (data[:-1] < self['Threshold']))[:,0]
             if typ == 'spike_count':
@@ -208,14 +215,14 @@ class EvalPlotter(QtGui.QWidget):
         
         QtGui.QWidget.__init__(self)
         self.layout = QtGui.QGridLayout()
-        self.layout.setContentsMargins(0, 0, 0, 0)
+        self.layout.setContentsMargins(10, 10, 10, 10)
         self.setLayout(self.layout)
         
         self.x_label = QtGui.QLabel('X data')
         self.y_label = QtGui.QLabel('Y data')
         self.layout.addWidget(self.x_label, 0, 0)
         self.layout.addWidget(self.y_label, 1, 0)
-        
+
         self.x_code = QtGui.QLineEdit('cmd')
         self.y_code = QtGui.QLineEdit()
         self.layout.addWidget(self.x_code, 0, 1)
@@ -230,14 +237,18 @@ class EvalPlotter(QtGui.QWidget):
         self.y_units_text = QtGui.QLineEdit()
         self.layout.addWidget(self.x_units_text, 0, 3)
         self.layout.addWidget(self.y_units_text, 1, 3)
+        self.layout.setColumnStretch(0, 1)
+        self.layout.setColumnStretch(1, 6)
+        self.layout.setColumnStretch(2, 1)
+        self.layout.setColumnStretch(3, 1)
 
         self.plot = pg.PlotWidget()
-        self.layout.addWidget(self.plot, 2, 0, 1, 4)
+        self.layout.addWidget(self.plot, 2, 0, 1, -1)
 
         self.hold_plot_btn = QtGui.QPushButton('Hold Plot')
-        self.layout.addWidget(self.hold_plot_btn, 3, 0, 1, 2)
+        self.layout.addWidget(self.hold_plot_btn, 3, 0)
         self.clear_plot_btn = QtGui.QPushButton('Clear Plot')
-        self.layout.addWidget(self.clear_plot_btn, 3, 2, 1, 2)
+        self.layout.addWidget(self.clear_plot_btn, 3, 2)
         
         self.x_code.editingFinished.connect(self.replot)
         self.y_code.editingFinished.connect(self.replot)
@@ -250,8 +261,11 @@ class EvalPlotter(QtGui.QWidget):
         # cross hair
         self.vLine = pg.InfiniteLine(angle=90, movable=False)
         self.hLine = pg.InfiniteLine(angle=0, movable=False)
+        self.vLine.setVisible(False)
+        self.hLine.setVisible(False)
         self.plot.addItem(self.vLine, ignoreBounds=False)
         self.plot.addItem(self.hLine, ignoreBounds=False)
+
         self.mouse_label = None  # don't add label until we have data
 
     def mouse_moved_over_plot(self, evt):
@@ -308,6 +322,8 @@ class EvalPlotter(QtGui.QWidget):
         if self.last_curve is None:
             self.last_curve = self.plot.plot(x, y, symbol='o', symbolBrush=(self.held_index, 10))
             self.vLine.scene().sigMouseHover.connect(self.mouse_moved_over_plot)  # enable cursor
+            self.vLine.setVisible(True)
+            self.hLine.setVisible(True)
             
         else:
             self.last_curve.setData(x, y)
@@ -328,5 +344,7 @@ class EvalPlotter(QtGui.QWidget):
         self.held_plots = []
         self.held_index = 0
         self.vLine.scene().sigMouseHover.disconnect(self.mouse_moved_over_plot)
+        self.vLine.setVisible(False)
+        self.hLine.setVisible(False)
         self.plot.clear()
         self.replot()

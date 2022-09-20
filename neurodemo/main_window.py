@@ -277,14 +277,15 @@ class DemoWindow(QtWidgets.QWidget):
             'V': (-100*NU.mV, 50*NU.mV),
             'cmd': None,
             'I': (-1*NU.nA, 1*NU.nA),
+            "IC": (-1*NU.nA, 1*NU.nA),
             'G': (0, 100*NU.nS),
             'OP': (0, 1),
             'm': (0, 1),
             'h': (0, 1),
             'n': (0, 1),
         }
-        color = {'I': 'c', 'G': 'y', 'OP': 'g', 'V': 'w'}.get(name, 0.7)
-        units = {'I': 'A', 'G': 'S', 'V': 'V', 'cmd': self.command_units()}
+        color = {'I': 'c', 'G': 'y', 'OP': 'g', 'V': 'w', 'IC': 'm'}.get(name, 0.7)
+        units = {'I': 'A', 'G': 'S', 'V': 'V', 'cmd': self.command_units(), 'IC': 'A'}
         label = pname + ' ' + name
         if name in units:
             label = (label, units[name])
