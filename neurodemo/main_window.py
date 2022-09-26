@@ -13,7 +13,7 @@ import pyqtgraph as pg
 import pyqtgraph.parametertree as pt
 from pyqtgraph.Qt import QtCore, QtGui, QtWidgets
 import pyqtgraph.multiprocess as mp
-
+# import qdarktheme
 import neurodemo
 import neurodemo.units as NU
 from neurodemo.channelparam import ChannelParameter
@@ -58,7 +58,10 @@ class DemoWindow(QtWidgets.QWidget):
         self.app.setStyle("fusion")
         self.app.setStyleSheet("QLabel{font-size: 11pt;} QText{font-size: 11pt;} {QWidget{font-size: 8pt;}")
         self.app.setStyleSheet("QTreeWidgetItem{font-size: 9pt;}") #  QText{font-size: 11pt;} {QWidget{font-size: 8pt;}")
-
+        # Apply dark theme to Qt application
+        # app.setStyleSheet(qdarktheme.load_stylesheet("dark"))
+        pg.setConfigOption('background', 'k')
+        pg.setConfigOption('foreground', 'w')
         if self.proc is None:
             print(sys.platform, "running without mp")
             # do not use remote process:
@@ -69,7 +72,7 @@ class DemoWindow(QtWidgets.QWidget):
 
         self.scrolling_plot_duration = 1.0 * NU.s
         self.result_buffer = ResultBuffer(max_duration=self.scrolling_plot_duration)
-
+        self.pencolor = 'w'
         self.dt = 20e-6 * NU.s
         self.integrator = 'solve_ivp'
         self.sim = self.ndemo.Sim(temp=6.3, dt=self.dt)
@@ -123,10 +126,10 @@ class DemoWindow(QtWidgets.QWidget):
         self.plot_splitter = QtWidgets.QSplitter(QtCore.Qt.Orientation.Vertical)
         self.splitter.addWidget(self.plot_splitter)
         
-        self.neuronview = NeuronView(self.neuron, mechanisms)
+        self.neuronview = NeuronView(self.neuron, mechanisms, pencolor=self.pencolor)
         self.plot_splitter.addWidget(self.neuronview)
         
-        self.clamp_param = ClampParameter(self.clamp, self)
+        self.clamp_param = ClampParameter(self.clamp, self, self.pencolor)
         self.ptree_stim.setParameters(self.clamp_param)
         self.clamp_param.plots_changed.connect(self.plots_changed)
         self.clamp_param.mode_changed.connect(self.mode_changed)

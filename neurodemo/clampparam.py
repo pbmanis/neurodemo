@@ -26,12 +26,12 @@ class ClampParameter(pt.parameterTypes.SimpleParameter):
     )  # self, channel, name, on/off
     mode_changed = QtCore.Signal(object, object)  # self, mode
 
-    def __init__(self, clamp, sim):
+    def __init__(self, clamp, sim, pencolor):
         self.clamp = clamp
         self.sim = sim
         self.dt = sim.dt
         self.dt_updated = True
-        self.plot_win = SequencePlotWindow()
+        self.plot_win = SequencePlotWindow(pencolor)
 
         self.triggers = []  # items are (trigger_time, pointer, trigger_buffer, (mode, amp, cmd, seq_ind, seq_len))
         self.result_buffer = []  # store a few recent results to ensure triggers are caught
