@@ -11,7 +11,7 @@ import neurodemo.units as NU
 class ChannelParameter(pt.parameterTypes.SimpleParameter):
     
     # emitted when a plot should be shown or hidden
-    plots_changed = QtCore.Signal(object, object, object, object)  # self, channel, name, on/off
+    plots_changed = QtCore.Signal(object, object, object, object)  # self, channel, name,    on/off
     
     def __init__(self, channel):
         self.channel = channel
@@ -41,6 +41,7 @@ class ChannelParameter(pt.parameterTypes.SimpleParameter):
                 self.channel.gmax = val
             elif param is self.child('Erev'):
                 self.channel.Erev = val
+                self.channel.set_erev(val)
             elif param.name().startswith('Plot'):
                 self.plots_changed.emit(self, self.channel, param.name()[5:], val)
 

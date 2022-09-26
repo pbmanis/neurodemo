@@ -149,6 +149,10 @@ class TraceAnalyzerParameter(pt.parameterTypes.GroupParameter):
         i1 = int(self['Start'] / dt)
         i2 = int(self['End'] / dt)
         data = data[self['Input']][i1:i2]
+        sign = 1.0
+        if self['Input'] in ["soma.IK.I", "soma.IKf.I", "soma.IKs.I", "soma.INa.I",
+            "soma.IH.I", "soma.INa1.I"]:
+            sign = -1.0   # flip sign of cation currents for display
         t = t[i1:i2]
         sign = 1.0
         # print("Current input: ", self["Input"])
@@ -212,6 +216,7 @@ class EvalPlotter(QtGui.QWidget):
         self.held_plots = []
         self.last_curve = None
         self.held_index = 0
+        self.cursor_visible = False
         
         QtGui.QWidget.__init__(self)
         self.layout = QtGui.QGridLayout()
@@ -225,13 +230,13 @@ class EvalPlotter(QtGui.QWidget):
 
         self.x_code = QtGui.QLineEdit('cmd')
         self.y_code = QtGui.QLineEdit()
-        self.layout.addWidget(self.x_code, 0, 1)
-        self.layout.addWidget(self.y_code, 1, 1)
+        self.layout.addWidget(self.x_code, 0, 1, 1, 2)
+        self.layout.addWidget(self.y_code, 1, 1, 1, 2)
         
         self.x_units_label = QtGui.QLabel('units')
         self.y_units_label = QtGui.QLabel('units')
-        self.layout.addWidget(self.x_units_label, 0, 2)
-        self.layout.addWidget(self.y_units_label, 1, 2)
+        self.layout.addWidget(self.x_units_label, 0, 3)
+        self.layout.addWidget(self.y_units_label, 1, 3)
         
         self.x_units_text = QtGui.QLineEdit('A')
         self.y_units_text = QtGui.QLineEdit()
@@ -248,7 +253,7 @@ class EvalPlotter(QtGui.QWidget):
         self.hold_plot_btn = QtGui.QPushButton('Hold Plot')
         self.layout.addWidget(self.hold_plot_btn, 3, 0)
         self.clear_plot_btn = QtGui.QPushButton('Clear Plot')
-        self.layout.addWidget(self.clear_plot_btn, 3, 2)
+        self.layout.addWidget(self.clear_plot_btn, 3, 2, 1, 2)
         
         self.x_code.editingFinished.connect(self.replot)
         self.y_code.editingFinished.connect(self.replot)
@@ -256,20 +261,27 @@ class EvalPlotter(QtGui.QWidget):
         self.y_units_text.editingFinished.connect(self.replot)
         self.hold_plot_btn.clicked.connect(self.hold_plot)
         self.clear_plot_btn.clicked.connect(self.clear_plot)
+        self.replot_btn.clicked.connect(self.replot)
+        self.show_cursor_check.stateChanged.connect(self.cursor_state_changed)
 
-        # add a crosshair to the plot:
-        # cross hair
+        # add a crosshair to the plot, but hide until ready
         self.vLine = pg.InfiniteLine(angle=90, movable=False)
         self.hLine = pg.InfiniteLine(angle=0, movable=False)
         self.vLine.setVisible(False)
         self.hLine.setVisible(False)
+        self.mouse_label = pg.TextItem(' ', color='c', anchor=[0.5, 1.0])
+        self.mouse_label.setVisible(False)
+     
         self.plot.addItem(self.vLine, ignoreBounds=False)
         self.plot.addItem(self.hLine, ignoreBounds=False)
+        self.plot.addItem(self.mouse_label)
+        self.vLine.scene().sigMouseHover.connect(self.mouse_moved_over_plot)  # enable cursor
 
-        self.mouse_label = None  # don't add label until we have data
 
     def mouse_moved_over_plot(self, evt):
-        if self.last_curve is None and self.held_index == 0:
+        # if self.last_curve is None and self.held_index == 0:
+        #     return
+        if not self.cursor_visible:
             return
         pos = evt[0]
         widget = pos.getViewWidget()
@@ -279,9 +291,6 @@ class EvalPlotter(QtGui.QWidget):
         viewPos = pos.vb.mapSceneToView(scenePos)
         self.vLine.setPos(viewPos.x())
         self.hLine.setPos(viewPos.y())
-        if self.mouse_label is None:
-            self.mouse_label = pg.TextItem(' ', color='c', anchor=[0.5, 1.0])
-            self.plot.addItem(self.mouse_label)
         self.mouse_label.setPos(viewPos.x(), viewPos.y())
         xt = f"<span style='font-size: 10pt; color:cyan'>x={viewPos.x():0.3e}</span style><br>"
         yt = f"<span style='font-size: 10pt; color:cyan'>y={viewPos.y():0.3e}</span style>"
@@ -321,10 +330,6 @@ class EvalPlotter(QtGui.QWidget):
             
         if self.last_curve is None:
             self.last_curve = self.plot.plot(x, y, symbol='o', symbolBrush=(self.held_index, 10))
-            self.vLine.scene().sigMouseHover.connect(self.mouse_moved_over_plot)  # enable cursor
-            self.vLine.setVisible(True)
-            self.hLine.setVisible(True)
-            
         else:
             self.last_curve.setData(x, y)
         self.x_data = x
@@ -344,7 +349,25 @@ class EvalPlotter(QtGui.QWidget):
         self.held_plots = []
         self.held_index = 0
         self.vLine.scene().sigMouseHover.disconnect(self.mouse_moved_over_plot)
-        self.vLine.setVisible(False)
-        self.hLine.setVisible(False)
         self.plot.clear()
+        # re-add the cursor
+        self.plot.addItem(self.vLine, ignoreBounds=False)
+        self.plot.addItem(self.hLine, ignoreBounds=False)
+        self.plot.addItem(self.mouse_label)
+        self.vLine.scene().sigMouseHover.connect(self.mouse_moved_over_plot)  # enable cursor
+        self.vLine.scene().sigMouseHover.connect(self.mouse_moved_over_plot)  # reenable cursor
+        self.cursor_visible = False
+        self.show_cursor_check.setCheckState(QtCore.Qt.CheckState.Unchecked)
         self.replot()
+
+    def cursor_state_changed(self):
+        if self.show_cursor_check.checkState() == QtCore.Qt.CheckState.Checked:
+            self.vLine.setVisible(True)
+            self.hLine.setVisible(True)
+            self.mouse_label.setVisible(True)
+            self.cursor_visible = True
+        else:
+            self.mouse_label.setVisible(False)
+            self.vLine.setVisible(False)
+            self.hLine.setVisible(False)
+            self.cursor_visible = False
