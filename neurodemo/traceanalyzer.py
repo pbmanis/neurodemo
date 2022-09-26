@@ -249,11 +249,16 @@ class EvalPlotter(QtGui.QWidget):
 
         self.plot = pg.PlotWidget()
         self.layout.addWidget(self.plot, 2, 0, 1, -1)
-
+        self.layout.setColumnStretch(1, 1)
         self.hold_plot_btn = QtGui.QPushButton('Hold Plot')
-        self.layout.addWidget(self.hold_plot_btn, 3, 0)
+        self.layout.addWidget(self.hold_plot_btn, 3, 0, 1, 1)
         self.clear_plot_btn = QtGui.QPushButton('Clear Plot')
-        self.layout.addWidget(self.clear_plot_btn, 3, 2, 1, 2)
+        self.layout.addWidget(self.clear_plot_btn, 3, 1, 1, 2)
+        self.replot_btn = QtGui.QPushButton('Replot')
+        self.layout.addWidget(self.replot_btn, 3, 3, 1, 1)
+        self.show_cursor_check = QtGui.QCheckBox('Enable Cursor')
+        self.show_cursor_check.setCheckState(QtCore.Qt.CheckState.Unchecked)
+        self.layout.addWidget(self.show_cursor_check, 3, 4, 1, 1)
         
         self.x_code.editingFinished.connect(self.replot)
         self.y_code.editingFinished.connect(self.replot)

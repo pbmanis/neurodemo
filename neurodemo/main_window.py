@@ -86,6 +86,13 @@ class DemoWindow(QtWidgets.QWidget):
         self.hhk = self.neuron.add(self.ndemo.HHK())
         self.dexh = self.neuron.add(self.ndemo.IH())
         self.dexh.enabled = False
+        self.ka = self.neuron.add(self.ndemo.KA())
+        self.ka.enabled = False
+        self.cat = self.neuron.add(self.ndemo.CaT())
+        self.cat.enabled = False
+        self.cal = self.neuron.add(self.ndemo.CaL())
+        self.cal.enabled = False
+
         self.lgna = self.neuron.add(self.ndemo.LGNa())
         self.lgkf = self.neuron.add(self.ndemo.LGKfast())
         self.lgks = self.neuron.add(self.ndemo.LGKslow())
@@ -95,7 +102,8 @@ class DemoWindow(QtWidgets.QWidget):
         
         self.clamp = self.neuron.add(self.ndemo.PatchClamp(mode='ic'))
         
-        mechanisms = [self.clamp, self.hhna, self.leak, self.hhk, self.dexh, self.lgna, self.lgkf, self.lgks]
+        mechanisms = [self.clamp, self.hhna, self.leak, self.hhk, self.dexh, 
+            self.ka, self.cat, self.cal, self.lgna, self.lgkf, self.lgks]
         # loop to run the simulation indefinitely
         self.runner = self.ndemo.SimRunner(self.sim)
         self.runner.set_speed(0.2)
@@ -141,6 +149,9 @@ class DemoWindow(QtWidgets.QWidget):
             ChannelParameter(self.hhna),
             ChannelParameter(self.hhk),
             ChannelParameter(self.dexh),
+            ChannelParameter(self.ka),
+            ChannelParameter(self.cal),
+            ChannelParameter(self.cat),
             ChannelParameter(self.lgna),
             ChannelParameter(self.lgkf),
             ChannelParameter(self.lgks),
@@ -153,6 +164,7 @@ class DemoWindow(QtWidgets.QWidget):
             IonConcentrations(IonClass(name='Na', Cout=140.0, Cin=8.0, valence=+1, enabled=False)),
             IonConcentrations(IonClass(name='K', Cout=4., Cin=140., valence=+1, enabled=False)),
             IonConcentrations(IonClass(name='Cl', Cout=140., Cin=20., valence=-1, enabled=False)),
+            IonConcentrations(IonClass(name='Ca', Cout=2.5, Cin=70e-6, valence=+2, enabled=False)),
         ]
         for ion in self.ion_concentrations:
             ion.updateErev(self.sim.temp)  # match temperature with an update
@@ -253,6 +265,8 @@ class DemoWindow(QtWidgets.QWidget):
                     self.params.child('Ions', "Na", "[C]out"),
                     self.params.child('Ions', "K", "[C]in"),
                     self.params.child('Ions', "K", "[C]out"),
+                    self.params.child('Ions', "Ca", "[C]in"),
+                    self.params.child('Ions', "Ca", "[C]out"),
                     self.params.child('Ions', "Cl", "[C]in"),
                     self.params.child('Ions', "Cl", "[C]out"),
                 ] and self.params.child('Ions', 'Na').value():
@@ -488,8 +502,8 @@ class DemoWindow(QtWidgets.QWidget):
         ENa_revs = {"INa": 50, "INa1": 74}
         for ch in ["INa", "INa1"]:
             chans[f"soma.{ch:s}", 'Erev'] = ENa_revs[ch]
-        EK_revs = {"IK": -74, "IKf": -90, "IKs": -90}
-        for ch in ["IK", "IKf", "IKs"]:
+        EK_revs = {"IK": -74, "IKf": -90, "IKs": -90, "IKA": -74}
+        for ch in ["IK", "IKf", "IKs", "IKA"]:
             chans[f"soma.{ch:s}", 'Erev'] = EK_revs[ch]
         Eh_revs = {"IH": -43,}
         for ch in ["IH"]:
@@ -534,6 +548,7 @@ class DemoWindow(QtWidgets.QWidget):
         self.params.child('Ions', 'Na').setValue(False)
         self.params.child('Ions', 'K').setValue(False)
         self.params.child('Ions', 'Cl').setValue(False)
+        self.params.child('Ions', 'Ca').setValue(False)
 
     def load_preset(self, preset):
         """Load preset configurations for the simulations.
@@ -554,6 +569,9 @@ class DemoWindow(QtWidgets.QWidget):
             chans['soma.Ileak', 'Erev'] = 0
             chans['soma.Ileak', "Gmax"] = 1*NU.nS
             chans['soma.INa'] = False
+            chans['soma.ICaL'] = False
+            chans['soma.ICaT'] = False
+            chans['soma.IKA'] = False
             chans['soma.IK'] = False
             chans['soma.IH'] = False
             chans['soma.INa1'] = False
@@ -571,6 +589,9 @@ class DemoWindow(QtWidgets.QWidget):
             chans['soma.Ileak', "Gmax"] = 1*NU.nS
             chans['soma.INa'] = True
             chans['soma.IK'] = True
+            chans['soma.ICaL'] = False
+            chans['soma.ICaT'] = False
+            chans['soma.IKA'] = False
             chans['soma.IH'] = False
             chans['soma.INa1'] = False
             chans['soma.IKf'] = False
@@ -588,6 +609,10 @@ class DemoWindow(QtWidgets.QWidget):
             chans['soma.INa'] = False
             chans['soma.IK'] = False
             chans['soma.IH'] = False
+            chans['soma.ICaL'] = False
+            chans['soma.ICaT'] = False
+            chans['soma.IKA'] = False
+
             chans['soma.INa1'] = True
             chans['soma.INa1', "Erev"] = 74 * NU.mV
             chans['soma.IKf'] = True
