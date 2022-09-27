@@ -749,7 +749,7 @@ class HHK(Channel):
         q10 = 3 ** ((self.sim.temp - 6.3) / 10.0)
         vm = state[self.section, "V"] - self.shift
 
-        vm = vm + 65e-3  ## gating parameter eqns assume resting is 0mV
+        vm = vm + 65e-3  ## gating parameter eqns for HH assume resting is 0mV
         vm *= 1000.0  ##  ..and that Vm is in mV
         n = state[self, "n"]
         # n, self.lastn = self.check_state(state, "n", self.lastn)
@@ -817,7 +817,7 @@ class HHNa(Channel):
         # m, self.lastm = self.check_state(state, "m", self.lastm)
         # h, self.lasth = self.check_state(state, "h", self.lasth) # state[self, "h"]
 
-        vm = vm + 65e-3  ## gating parameter eqns assume resting is 0mV
+        vm = vm + 65e-3  ## gating parameter eqns for HH assume resting is 0mV
         vm *= 1000.0  ##  ..and that Vm is in mV
 
         # disabled for now -- does not seem to improve speed.
@@ -850,7 +850,7 @@ class IH(Channel):
         init_state = OrderedDict([("f", 0), ("s", 0)])
         Channel.__init__(self, gbar=gbar, init_state=init_state, **kwds)
         # self.erev = -43 * NU.mV
-        self.shift = 0
+        self.shift = 0.0
         self.lastf = init_state["f"]
         self.lasts = init_state["s"]
 
@@ -880,7 +880,6 @@ class IH(Channel):
         # s, self.lasts = self.check_state(state, "s", self.lasts) # state[self, "s"]
         f = state[self, "f"]
         s = state[self, "s"]
-        # vm = vm + 65e-3   ## gating parameter eqns assume resting is 0mV
         vm *= 1000.0  ##  ..and that Vm is in mV
         Hinf = 1.0 / (1.0 + np.exp((vm + 68.9) / 6.5))
         tauF = np.exp((vm + 158.6) / 11.2) / (1.0 + np.exp((vm + 75.0) / 5.5))
@@ -900,7 +899,7 @@ class KA(Channel):
         init_state = OrderedDict([("a", 0), ("b", 0), ("c", 0)])
         Channel.__init__(self, gbar=gbar, init_state=init_state, **kwds)
         # self.erev = -43 * NU.mV
-        self.shift = 0
+        self.shift = 0.0
         self.lasta = init_state["a"]
         self.lastb = init_state["b"]
         self.lastc = init_state["c"]
@@ -926,20 +925,24 @@ class KA(Channel):
     #     return n, n
 
     def derivatives(self, state):
+        self.q10 = 3 ** ((self.sim.temp - 22.0) / 10.0)
         vm = state[self.section, "V"] - self.shift
         a = state[self, "a"]
         b = state[self, "b"]
         c = state[self, "c"]
-        # vm = vm + 65e-3   ## gating parameter eqns assume resting is 0mV
+
         vm *= 1000.0  ##  ..and that Vm is in mV
-        Ainf = np.power(1.0/(1.0 + np.exp(-(vm + 31.0) / 6.0)), 4.0)
-        Binf = np.power(1.0/(1.0 + np.exp((vm+66.0)/7.0)), 2.0)
+        Ainf = np.power(1.0 + np.exp(-(vm + 31.0) / 6.0), -0.25)
+        Binf = np.power(1.0 + np.exp((vm+66.0)/7.0), -0.5)
         Cinf = Binf
         tauA = (7.0*np.exp((vm + 60.0) / 14.0) + 29* np.exp(-(vm + 60.0) / 24))
-        tauA = 100*1.0/tauA + 0.1
-        tauB = (14*np.exp((vm+60.0)/27.0) + 29 * np.exp(-(vm+60.0)/24))
-        tauB = 1000*1.0/tauB + 1.0
-        tauC = 10.0 + 90.0/(1.0 + np.exp(-(vm + 66.0) / 17.0))
+        tauA = 100.0*(1.0/tauA) + 0.1
+        tauA = tauA/self.q10
+        tauB = (14.0*np.exp((vm+60.0)/27.0) + 29 * np.exp(-(vm+60.0)/24))
+        tauB = 1000.0*(1.0/tauB) + 1.0
+        tauB = tauB/self.q10
+        tauC = 10.0 + 90.0/(1.0 + np.exp((-66.0 - vm) / 17.0))
+        tauC = tauC/self.q10
         da = (Ainf - a) / tauA
         db = (Binf - b) / tauB
         dc = (Cinf - c) / tauC
@@ -949,6 +952,7 @@ class CaL(Channel):
     """L-type calcium channel
     From the .mod file in model db fobu Kampa and Stuart, 2006
     Accession:108458
+
     """
 
     type = "ICaL"
@@ -984,11 +988,12 @@ class CaL(Channel):
     #     return n, n
 
     def derivatives(self, state):
+
+
         vm = state[self.section, "V"] - self.shift
         m = state[self, "m"]
         h = state[self, "m"]
 
-        # vm = vm + 65e-3   ## gating parameter eqns assume resting is 0mV
         vm *= 1000.0  ##  ..and that Vm is in mV
         am = 0.055*(-27.0-vm)/(np.exp((-27.0-vm)/3.8) - 1)
         bm =  0.94*np.exp((-75.0-vm)/17.0)
@@ -1006,6 +1011,8 @@ class CaT(Channel):
     """T-type calcium channel
     From the .mod file in model db from Kampa and Stuart, 2006
     Accession:108458
+    modified to be back from orignal model Hugenard and McCromick
+    Accession 279
     """
 
     type = "ICaT"
@@ -1016,7 +1023,7 @@ class CaT(Channel):
         init_state = OrderedDict([("m", 0), ("h", 0)])
         Channel.__init__(self, gbar=gbar, init_state=init_state, **kwds)
         # self.erev = 140 * NU.mV
-        self.shift = 0
+        self.shift = 2.0
         self.lasta = init_state["m"]
         self.lastb = init_state["h"]
 
@@ -1041,17 +1048,28 @@ class CaT(Channel):
     #     return n, n
 
     def derivatives(self, state):
-        vm = state[self.section, "V"] - self.shift
+        self.q10m = 5 ** ((self.sim.temp - 24.0) / 10.0)
+        self.q10h = 3 ** ((self.sim.temp - 24.0) / 10.0)
+        vm = state[self.section, "V"] - self.shift/1000.0  # keep in V here
         m = state[self, "m"]
         h = state[self, "h"]
 
-        # vm = vm + 65e-3   ## gating parameter eqns assume resting is 0mV
         vm *= 1000.0  ##  ..and that Vm is in mV
-        minf = 1.0 / (1.0 + np.exp(-(vm + 50.0)/7.4))
-        hinf = 1.0 / (1.0 + np.exp((vm + 78.0)/5.0))
-        mtau = 3.0 + 1.0/(np.exp((vm + 25.0)/20.0) + np.exp(-(vm + 100.)/15.0))
+        minf = 1.0 / (1.0 + np.exp(-(vm  + 57.0)/6.2))
+        hinf = 1.0 / (1.0 + np.exp((vm + 81.0)/4.0))
+        mtau = 0.612 + 1.0/(np.exp((vm + 16.8)/18.2) + np.exp(-(vm+ 132.)/16.7))
+        mtau = mtau/self.q10m
+        #if vm < -80.0:
         htau = 85.0 + 1.0/(np.exp((vm + 46.0)/4.0) + np.exp(-(vm + 405.0)/50.0))
+        #    htau = np.exp((vm + 467.0/66.6)) / self.q10h
+        #else:
+        #    htau = (28.0 + np.exp(-(vm+22.0)/10.5)) / self.q10h
         dm = (minf - m) / mtau
+        # print("htau: ", htau, "vm: ", vm)
+        # if np.isnan(htau) or vm < -150.0:
+        #     raise ValueError()
+        #     exit()
+
         dh = (hinf - h) / htau
         return [dm * 1e3, dh * 1e3]
 

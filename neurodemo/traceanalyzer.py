@@ -150,16 +150,15 @@ class TraceAnalyzerParameter(pt.parameterTypes.GroupParameter):
         i2 = int(self['End'] / dt)
         data = data[self['Input']][i1:i2]
         sign = 1.0
-        if self['Input'] in ["soma.IK.I", "soma.IKf.I", "soma.IKs.I", "soma.INa.I",
-            "soma.IH.I", "soma.INa1.I"]:
+        if self['Input'] in [
+            "soma.INa.I", "soma.IK.I", "soma.IKA.I", 
+            "soma.ICaT.I", "soma.ICaL.I",
+            "soma.IH.I",
+            "soma.INa1.I", "soma.IKf.I", "soma.IKs.I", 
+             ]:
             sign = -1.0   # flip sign of cation currents for display
         t = t[i1:i2]
-        sign = 1.0
-        # print("Current input: ", self["Input"])
-        # print (data.names)
-        if self['Input'] in ["soma.IK.I", "soma.IKf.I", "soma.IKs.I", "soma.INa.I",
-             "soma.IH.I", "soma.INa1.I"]:
-             sign = -1.0   # flip sign of cation currents for display
+ 
         typ = self['Type']
         if typ == 'mean':
             return sign*data.mean()
