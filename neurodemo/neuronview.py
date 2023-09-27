@@ -39,7 +39,7 @@ class CellPosition:
     diam_y = 100
     membrane_thickness = 4
 
-colormap = colormaps.CET_CBL2.convert_to_map()
+colormap = colormaps.get_colormap.convert_to_map('CET_CBL2')
 
 def v_color(v):
     """Return a color corresponding to voltage."""
@@ -54,7 +54,7 @@ class NeuronView(pg.GraphicsLayoutWidget):
 
     """
 
-    def __init__(self, soma, mechanisms):
+    def __init__(self, soma, mechanisms, pencolor:str="w"):
         """Create a NeuronView instance
 
         Parameters
@@ -66,6 +66,7 @@ class NeuronView(pg.GraphicsLayoutWidget):
         """
         pg.GraphicsLayoutWidget.__init__(self)
         self.soma = soma
+        self.pencolor = pencolor
         self.setRenderHint(QtGui.QPainter.RenderHint.Antialiasing)
         self.view = self.addViewBox(0, 0)
         self.view.setAspectLocked()
@@ -114,7 +115,7 @@ class NeuronView(pg.GraphicsLayoutWidget):
 
         # add a color bar scale on the right bottom. 
         
-        colormap2 = colormaps.CET_CBL2.convert_to_map()
+        colormap2 = colormaps.convert_to_map('CET_CBL2')
         colormap2.reverse()
         self.colorbar = pg.ColorBarItem(values=(-150, 50), width=10, interactive=False,
             cmap = colormap, orientation='horizontal')
@@ -479,7 +480,7 @@ class Pipette(NeuronItem):
 
 
 class Capacitor(QtGui.QGraphicsItemGroup):
-    def __init__(self, l1, l2, w1=10, w2=10, gap=6):
+    def __init__(self, l1, l2, w1=10, w2=10, gap=6, pencolor:str="w"):
         QtGui.QGraphicsItemGroup.__init__(self)
 
         g2 = gap / 2
@@ -495,12 +496,12 @@ class Capacitor(QtGui.QGraphicsItemGroup):
 
         self.line = QtGui.QGraphicsPathItem(path)
         self.line.setBrush(pg.mkBrush(None))
-        self.line.setPen(pg.mkPen("w", width=1, cosmetic=False))
+        self.line.setPen(pg.mkPen(pencolor, width=1, cosmetic=False))
         self.line.setParentItem(self)
 
 
 class Battery(QtGui.QGraphicsItemGroup):
-    def __init__(self, l1, l2, w1=10, w2=10, gap=4, polarity:str=""):
+    def __init__(self, l1, l2, w1=10, w2=10, gap=4, polarity:str="", pencolor:str="w"):
         QtGui.QGraphicsItemGroup.__init__(self)
 
         g2 = gap / 2
@@ -526,7 +527,7 @@ class Battery(QtGui.QGraphicsItemGroup):
 
         self.line = QtGui.QGraphicsPathItem(path)
         self.line.setBrush(pg.mkBrush(None))
-        self.line.setPen(pg.mkPen("w", width=1, cosmetic=False))
+        self.line.setPen(pg.mkPen(pencolor, width=1, cosmetic=False))
         self.line.setParentItem(self)
 
 
@@ -541,7 +542,7 @@ class Resistor(QtGui.QGraphicsItemGroup):
         l2 : (float) length of lead2 to *center*
 
     """
-    def __init__(self, l1, l2):
+    def __init__(self, l1, l2, pencolor:str="w"):
         QtGui.QGraphicsItemGroup.__init__(self)
 
         w = 3
@@ -561,5 +562,5 @@ class Resistor(QtGui.QGraphicsItemGroup):
 
         self.line = QtGui.QGraphicsPathItem(path)
         self.line.setBrush(pg.mkBrush(None))
-        self.line.setPen(pg.mkPen("w", width=1, cosmetic=False))
+        self.line.setPen(pg.mkPen(pencolor, width=1, cosmetic=False))
         self.line.setParentItem(self)

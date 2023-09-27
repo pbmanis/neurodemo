@@ -1,1 +1,1 @@
-from .CET_CBL2 import *
+from .get_colormap import *

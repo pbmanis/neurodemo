@@ -58,6 +58,7 @@ class TraceAnalyzer(QtGui.QWidget):
         fields = ['cmd'] + [anal.name() for anal in self.params.children()]
         data = np.empty(len(self.data), dtype=[(str(f), float) for f in fields])
         for i, rec in enumerate(self.data):
+            # print(rec)
             t, d, info = rec
             data['cmd'][i] = info['amp']
             for analysis in self.params.children():
@@ -149,17 +150,22 @@ class TraceAnalyzerParameter(pt.parameterTypes.GroupParameter):
         i2 = int(self['End'] / dt)
         data = data[self['Input']][i1:i2]
         sign = 1.0
-        if self['Input'] in ["soma.IK.I", "soma.IKf.I", "soma.IKs.I", "soma.INa.I",
-            "soma.IH.I", "soma.INa1.I"]:
+        if self['Input'] in [
+            "soma.INa.I", "soma.IK.I", "soma.IKA.I", 
+            "soma.ICaT.I", "soma.ICaL.I",
+            "soma.IH.I",
+            "soma.INa1.I", "soma.IKf.I", "soma.IKs.I", 
+             ]:
             sign = -1.0   # flip sign of cation currents for display
         t = t[i1:i2]
+ 
         typ = self['Type']
         if typ == 'mean':
-            return (sign*data).mean()
+            return sign*data.mean()
         elif typ == 'min':
-            return (sign*data).min()
+            return sign*data.min()
         elif typ == 'max':
-            return (sign*data).max()
+            return sign*data.max()
         elif typ.startswith('spike'):
             spikes = np.argwhere((data[1:] > self['Threshold']) & (data[:-1] < self['Threshold']))[:,0]
             if typ == 'spike_count':
@@ -213,14 +219,14 @@ class EvalPlotter(QtGui.QWidget):
         
         QtGui.QWidget.__init__(self)
         self.layout = QtGui.QGridLayout()
-        self.layout.setContentsMargins(0, 0, 0, 0)
+        self.layout.setContentsMargins(10, 10, 10, 10)
         self.setLayout(self.layout)
         
         self.x_label = QtGui.QLabel('X data')
         self.y_label = QtGui.QLabel('Y data')
         self.layout.addWidget(self.x_label, 0, 0)
         self.layout.addWidget(self.y_label, 1, 0)
-        
+
         self.x_code = QtGui.QLineEdit('cmd')
         self.y_code = QtGui.QLineEdit()
         self.layout.addWidget(self.x_code, 0, 1, 1, 2)
@@ -233,11 +239,15 @@ class EvalPlotter(QtGui.QWidget):
         
         self.x_units_text = QtGui.QLineEdit('A')
         self.y_units_text = QtGui.QLineEdit()
-        self.layout.addWidget(self.x_units_text, 0, 4)
-        self.layout.addWidget(self.y_units_text, 1, 4)
+        self.layout.addWidget(self.x_units_text, 0, 3)
+        self.layout.addWidget(self.y_units_text, 1, 3)
+        self.layout.setColumnStretch(0, 1)
+        self.layout.setColumnStretch(1, 6)
+        self.layout.setColumnStretch(2, 1)
+        self.layout.setColumnStretch(3, 1)
 
         self.plot = pg.PlotWidget()
-        self.layout.addWidget(self.plot, 2, 0, 1, 5)
+        self.layout.addWidget(self.plot, 2, 0, 1, -1)
         self.layout.setColumnStretch(1, 1)
         self.hold_plot_btn = QtGui.QPushButton('Hold Plot')
         self.layout.addWidget(self.hold_plot_btn, 3, 0, 1, 1)
@@ -342,7 +352,7 @@ class EvalPlotter(QtGui.QWidget):
     def clear_plot(self):
         self.held_plots = []
         self.held_index = 0
-        self.last_curve = None
+        self.vLine.scene().sigMouseHover.disconnect(self.mouse_moved_over_plot)
         self.plot.clear()
         # re-add the cursor
         self.plot.addItem(self.vLine, ignoreBounds=False)
