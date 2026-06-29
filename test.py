@@ -3,8 +3,8 @@
 NeuroDemo - Physiological neuron sandbox for educational purposes
 Luke Campagnola 2015
 """
+import argparse
 import pyqtgraph as pg
-from pyqtgraph.Qt import QtGui
 import neurodemo.units as NU
 import neurodemo as ND
 import numpy as np
@@ -16,8 +16,7 @@ class TestSim(pg.QtWidgets.QWidget):
     def __init__(self):
         super().__init__()
 
-    def run(self):
-        simtype = "LG"
+    def run(self, simtype:str="LG"):
 
         if simtype == "HH":
             # HH Simulation
@@ -47,9 +46,11 @@ class TestSim(pg.QtWidgets.QWidget):
         self.win.ci.layout.setRowFixedHeight(1, 150)
         p3 = self.win.addPlot(row=2, col=0)
         self.win.ci.layout.setRowFixedHeight(2, 150)
-
+        print(sim.dt)
+        sim.dt = sim.dt*NU.us
         dur = 100 * NU.ms
         npts = int(dur / sim.dt)
+        print(dur, npts, sim.dt)
         x1 = int(20*NU.ms / sim.dt)
         x2 = int(80*NU.ms / sim.dt)
         x = np.linspace(-200, 200, 11) * NU.pA
@@ -58,6 +59,7 @@ class TestSim(pg.QtWidgets.QWidget):
         data = np.zeros((len(x), npts, 9))
         t = np.arange(npts) * sim.dt
         for i, v in enumerate(x):
+            print("i: ", i, "v: ", v)
             cmd[i, x1:x2] = v
             clamp.queue_command(cmd[i], sim.dt)
             #data[i] = run(neuron, mode='ic', dt=dt, cmd=cmd[i])
@@ -91,24 +93,30 @@ class TestSim(pg.QtWidgets.QWidget):
     
     
     def set_window(self, parent=None):
-        super(TestSim, self).__init__(parent=parent)
-        QtGui.QWidget.__init__(self)
         self.fullscreen_widget = None
         self.resize(1024, 768)
-        self.layout = pg.QtWidgets.QGridLayout()
-        #self.win = pg.GraphicsLayoutWidget(title="Test Simulator")
-        # self.win = pg.GraphicsLayoutWidget()
-        #self.win.resize(1000, 600)
+        self.win = pg.GraphicsLayoutWidget(title="Test Simulator")
+        layout = pg.QtWidgets.QVBoxLayout()
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.addWidget(self.win)
+        self.setLayout(layout)
 
 
 def main():
 
+    parser = argparse.ArgumentParser()
+    parser.add_argument('simtype', default="LG", help="Test the Sim.py module",
+                                   choices=["LG", "HH"]
+                                   )
+    args = parser.parse_args()
     Tester = TestSim()
     Tester.set_window()
-    Tester.run()
+    Tester.run(args.simtype)
     Tester.show()
+    print("show called")
     import sys
     if sys.flags.interactive == 0:
+        print("excc")
         app.exec()
 if __name__ == "__main__":
     main()
