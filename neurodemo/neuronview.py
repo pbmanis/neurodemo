@@ -10,7 +10,7 @@ from calendar import c
 from dataclasses import dataclass
 import os, sys, tempfile
 from pathlib import Path
-from typing import Union, List, Tuple
+from typing import Any, Union, List, Tuple
 import numpy as np
 import pyqtgraph as pg
 from pyqtgraph.Qt import QtGui, QtCore, QtWidgets
@@ -212,7 +212,7 @@ class Cell(NeuronItem):
     
     def set_transform(
         self,
-        item: object,
+        item: Any,
         scale: Union[List, Tuple] = [1, 1],
         angle: float = 0.0,
         translate: Union[List, Tuple] = (0, 0),
@@ -294,9 +294,9 @@ class Channel(NeuronItem):
         self.bg = QtWidgets.QGraphicsRectItem(QtCore.QRectF(-5, -10, 10, 20))
         self.bg.setParentItem(self)
         self.bg.setZValue(-1)
-        color = pg.mkColor(f"#{color}")
+        qcolor = pg.mkColor(f"#{color}")
         self.bg.setBrush(
-            pg.mkBrush(color.red() // 2, color.green() // 2, color.blue() // 2, 255)
+            pg.mkBrush(qcolor.red() // 2, qcolor.green() // 2, qcolor.blue() // 2, 255)
         )
 
         self.circuit = QtWidgets.QGraphicsItemGroup()
@@ -326,7 +326,7 @@ class Channel(NeuronItem):
 
     def set_transform(
         self,
-        item: object,
+        item: Any,
         scale: Union[List, Tuple] = [1, 1],
         angle: float = 0.0,
         translate: Union[List, Tuple] = (0, 50),
