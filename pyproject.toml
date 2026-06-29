@@ -1,0 +1,65 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+# build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "neurodemo"
+version = "1.4"
+description = "Simulations as a teaching tool for neuron electrophysiology"
+readme = "README.md"
+license = { text = "MIT" }
+authors = [
+    { name = "Luke Campagnola" },
+    { name = "Paul B. Manis", email = "pbmanis@bellsouth.net" },
+]
+requires-python = "==3.13"
+classifiers = [
+    "Programming Language :: Python :: 3.13",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Intended Audience :: Education",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
+]
+dependencies = [
+    "lmfit>=0.9.13",
+    "numpy>=1.21",
+    "pyqt6",
+    "pyqt6-sip",
+    "pyqtgraph>=0.12.4",
+    "pyqtdarktheme>=1.1.0",
+    "scipy>=1.9.1",
+    "MetaArray==2.2.2",
+]
+
+[project.optional-dependencies]
+dev = [
+    "black",
+    "flake8",
+    "isort",
+    "mypy",
+    "pytest",
+    "pyinstaller",
+]
+
+[project.urls]
+Homepage = "https://github.com/pbmanis/neurodemo"
+Repository = "https://github.com/pbmanis/neurodemo"
+
+[tool.setuptools.packages.find]
+include = ["neurodemo*"]
+
+[tool.black]
+line-length = 100
+target-version = ["py310", "py311", "py312"]
+
+[tool.isort]
+profile = "black"
+line_length = 100
+
+[tool.mypy]
+python_version = "3.13"
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["neurodemo/tests"]

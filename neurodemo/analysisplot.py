@@ -9,7 +9,7 @@ import numpy as np
 import pyqtgraph as pg
 from pyqtgraph.Qt import QtGui, QtCore
 import pyqtgraph.console
-from pyqtgraph.metaarray import MetaArray
+from MetaArray import MetaArray
 from .editor import Editor
 
 
