@@ -8,7 +8,7 @@ sleep 3
 # make x86_64 app
 #
 rm -rf build dist
-python setup_x86_64.py py2app
+python3 setup_x86_64.py py2app
 mkdir -p dist/dmg
 sleep 3
 
