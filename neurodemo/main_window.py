@@ -115,7 +115,7 @@ class DemoWindow(QtWidgets.QWidget):
             self.runner.new_result.connect(self.new_result) 
 
         # set up GUI
-        QtGui.QWidget.__init__(self)
+        QtWidgets.QWidget.__init__(self)
 
         self.fullscreen_widget = None
         self.resize(1400, 800)

@@ -2,12 +2,12 @@
 Taken from future modifications to pyqtgraph..
 
 """
-from pyqtgraph.Qt import QtGui, QtCore
+from pyqtgraph.Qt import QtGui, QtCore, QtWidgets
 import pyqtgraph.functions as fn
 import numpy as np
 
 
-class ArrowItem(QtGui.QGraphicsPathItem):
+class ArrowItem(QtWidgets.QGraphicsPathItem):
     """
     For displaying scale-invariant arrows.
     For arrows pointing to a location on a curve, see CurveArrow
@@ -21,7 +21,7 @@ class ArrowItem(QtGui.QGraphicsPathItem):
         the setStyle() method.
         """
         self.opts = {}
-        QtGui.QGraphicsPathItem.__init__(self, opts.get('parent', None))
+        QtWidgets.QGraphicsPathItem.__init__(self, opts.get('parent', None))
 
         if 'size' in opts:
             opts['headLen'] = opts['size']
@@ -91,7 +91,7 @@ class ArrowItem(QtGui.QGraphicsPathItem):
 
     def paint(self, p, *args):
         p.setRenderHint(QtGui.QPainter.RenderHint.Antialiasing)
-        QtGui.QGraphicsPathItem.paint(self, p, *args)
+        QtWidgets.QGraphicsPathItem.paint(self, p, *args)
         
         #p.setPen(fn.mkPen('r'))
         #p.setBrush(fn.mkBrush(None))
@@ -99,7 +99,7 @@ class ArrowItem(QtGui.QGraphicsPathItem):
 
     def shape(self):
         #if not self.opts['pxMode']:
-            #return QtGui.QGraphicsPathItem.shape(self)
+            #return QtWidgets.QGraphicsPathItem.shape(self)
         return self.path
     
     ## dataBounds and pixelPadding methods are provided to ensure ViewBox can

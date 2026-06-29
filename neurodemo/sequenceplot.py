@@ -6,7 +6,7 @@ Luke Campagnola 2015
 import numpy as np
 
 import pyqtgraph as pg
-from pyqtgraph.Qt import QtGui, QtCore
+from pyqtgraph.Qt import QtGui, QtCore, QtWidgets
 
 import neurodemo.colormaps
 
@@ -14,22 +14,22 @@ from .analysisplot import AnalysisPlot   # simpler code-based analyzer
 from .traceanalyzer import TraceAnalyzer  # user friendly analyzer
 from neurodemo import colormaps
 
-class SequencePlotWindow(QtGui.QWidget):
+class SequencePlotWindow(QtWidgets.QWidget):
     def __init__(self, pencolor:str="w"):
-        QtGui.QWidget.__init__(self)
+        QtWidgets.QWidget.__init__(self)
         self.pencolor = pencolor
         self.mode = 'ic'
-        self.layout = QtGui.QGridLayout()
+        self.layout = QtWidgets.QGridLayout()
         self.layout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(self.layout)
-        self.hold_check = QtGui.QCheckBox("Hold data")
+        self.hold_check = QtWidgets.QCheckBox("Hold data")
         self.hold_check.setChecked(True)
         self.layout.addWidget(self.hold_check, 0, 0)
-        self.clear_btn = QtGui.QPushButton("Clear data")
+        self.clear_btn = QtWidgets.QPushButton("Clear data")
         self.layout.addWidget(self.clear_btn, 0, 1)
         self.clear_btn.clicked.connect(self.clear_data)
 
-        self.splitter = QtGui.QSplitter(QtCore.Qt.Orientation.Vertical)
+        self.splitter = QtWidgets.QSplitter(QtCore.Qt.Orientation.Vertical)
         self.layout.addWidget(self.splitter, 1, 0, 1, 2)
         
         self.plot_layout = pg.GraphicsLayoutWidget()

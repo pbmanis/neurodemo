@@ -16,20 +16,20 @@
 
 import sys
 import re
-from pyqtgraph.Qt import QtGui, QtCore
+from pyqtgraph.Qt import QtGui, QtCore, QtWidgets
 
 try:
-    from PyQt4 import Qsci
-    from PyQt4.Qsci import QsciScintilla
+    from PyQt6 import Qsci  # type: ignore[import-untyped]
+    from PyQt6.Qsci import QsciScintilla  # type: ignore[import-untyped]
     HAVE_QSCI = True
 except ImportError:
     HAVE_QSCI = False
 
 if not HAVE_QSCI:
     # backup editor in case QScintilla is not available
-    class Editor(QtGui.QPlainTextEdit):
+    class Editor(QtWidgets.QPlainTextEdit):
         def __init__(self, parent=None, language=None):
-            QtGui.QPlainTextEdit.__init__(self, parent)
+            QtWidgets.QPlainTextEdit.__init__(self, parent)
 
         def setText(self, text):
             self.setPlainText(text)
@@ -61,7 +61,7 @@ else:
             # Margin 0 is used for line numbers
             fontmetrics = QtGui.QFontMetrics(font)
             self.setMarginsFont(font)
-            self.setMarginWidth(0, fontmetrics.width("000") + 6)
+            self.setMarginWidth(0, fontmetrics.horizontalAdvance("000") + 6)
             self.setMarginLineNumbers(0, True)
             self.setMarginsBackgroundColor(QtGui.QColor("#cccccc"))
 
@@ -71,14 +71,14 @@ else:
             #self.connect(self,
             #    SIGNAL('marginClicked(int, int, Qt::KeyboardModifiers)'),
             #    self.on_margin_clicked)
-            self.markerDefine(QsciScintilla.RightArrow, self.ARROW_MARKER_NUM)
+            self.markerDefine(QsciScintilla.MarkerSymbol.RightArrow, self.ARROW_MARKER_NUM)
             self.setMarkerBackgroundColor(QtGui.QColor("#ee1111"),
                                           self.ARROW_MARKER_NUM)
 
             # Brace matching: enable for a brace immediately before or after
             # the current position
             #
-            self.setBraceMatching(QsciScintilla.SloppyBraceMatch)
+            self.setBraceMatching(QsciScintilla.BraceMatch.SloppyBraceMatch)
 
             # Current line visible with special background color
             self.setCaretLineVisible(True)
@@ -98,9 +98,9 @@ else:
             # here: http://www.scintilla.org/ScintillaDoc.html)
             self.SendScintilla(QsciScintilla.SCI_SETHSCROLLBAR, 0)
 
-            self.setWrapMode(QsciScintilla.WrapWord)
+            self.setWrapMode(QsciScintilla.WrapMode.WrapWord)
 
-            self.setEolMode(QsciScintilla.EolUnix)
+            self.setEolMode(QsciScintilla.EolMode.EolUnix)
             # not too small
             #self.setMinimumSize(600, 450)
 
@@ -122,8 +122,8 @@ else:
 
         def wheelEvent(self, ev):
             # Use ctrl+wheel to zoom in/out
-            if QtCore.Qt.ControlModifier & ev.modifiers():
-                if ev.delta() > 0:
+            if QtCore.Qt.KeyboardModifier.ControlModifier & ev.modifiers():
+                if ev.angleDelta().y() > 0:
                     self.zoomIn()
                 else:
                     self.zoomOut()
@@ -131,18 +131,18 @@ else:
                 return super(Editor, self).wheelEvent(ev)
 
         def keyPressEvent(self, ev):
-            if int(QtCore.Qt.ControlModifier & ev.modifiers()) > 0:
-                if ev.key() == QtCore.Qt.Key_Slash:
+            if int(QtCore.Qt.KeyboardModifier.ControlModifier & ev.modifiers()) > 0:
+                if ev.key() == QtCore.Qt.Key.Key_Slash:
                     self.comment(True)
                     return
-                elif ev.key() == QtCore.Qt.Key_Question:
+                elif ev.key() == QtCore.Qt.Key.Key_Question:
                     self.comment(False)
                     return
-                elif (ev.key() == QtCore.Qt.Key_Z and
-                      QtCore.Qt.ShiftModifier & ev.modifiers()):
+                elif (ev.key() == QtCore.Qt.Key.Key_Z and
+                      QtCore.Qt.KeyboardModifier.ShiftModifier & ev.modifiers()):
                     self.redo()
                     return
-                elif ev.key() == QtCore.Qt.Key_Q:
+                elif ev.key() == QtCore.Qt.Key.Key_Q:
                     sys.exit(0)
             return super(Editor, self).keyPressEvent(ev)
 
@@ -186,9 +186,9 @@ else:
 
 
 if __name__ == "__main__":
-    app = QtGui.QApplication(sys.argv)
+    app = QtWidgets.QApplication(sys.argv)
     editor = Editor()
     editor.show()
     editor.setText(open(sys.argv[0]).read())
     editor.resize(800, 800)
-    app.exec_()
+    app.exec()

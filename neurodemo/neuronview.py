@@ -13,11 +13,10 @@ from pathlib import Path
 from typing import Union, List, Tuple
 import numpy as np
 import pyqtgraph as pg
-from pyqtgraph.Qt import QtGui, QtCore, QtSvg
+from pyqtgraph.Qt import QtGui, QtCore, QtWidgets
 from pyqtgraph import ArrowItem
+from PyQt6 import QtSvgWidgets as QtSvg
 from neurodemo import colormaps
-if pg.Qt.QT_LIB == 'PyQt6':
-    from PyQt6 import QtSvgWidgets as QtSvg
 
 
 # for storing dynamically-generated svg files
@@ -100,13 +99,13 @@ class NeuronView(pg.GraphicsLayoutWidget):
             self.items.append(item)  # all of the items in the view
 
         # translucent mask to obscure cell when circuit is visible
-        self.mask = QtGui.QGraphicsRectItem(QtCore.QRectF(-1000, -1000, 2000, 2000))
+        self.mask = QtWidgets.QGraphicsRectItem(QtCore.QRectF(-1000, -1000, 2000, 2000))
         self.view.addItem(self.mask)
         self.mask.setBrush(pg.mkBrush(0, 0, 0, 180))
         self.mask.setZValue(5)
 
         # circuit items are added separately so they appear above the mask
-        self.circuit = QtGui.QGraphicsItemGroup()
+        self.circuit = QtWidgets.QGraphicsItemGroup()
         self.view.addItem(self.circuit)
         self.circuit.setZValue(10)
         for i in self.items:
@@ -118,7 +117,7 @@ class NeuronView(pg.GraphicsLayoutWidget):
         colormap2 = colormaps.convert_to_map('CET_CBL2')
         colormap2.reverse()
         self.colorbar = pg.ColorBarItem(values=(-150, 50), width=10, interactive=False,
-            cmap = colormap, orientation='horizontal')
+            colorMap=colormap, orientation='horizontal')
         self.colorbar.setTitle("V (mV)")
         self.colorbar.setGeometry(100, -40, 100, 150)
         cbax = self.colorbar.getAxis('bottom')
@@ -127,7 +126,7 @@ class NeuronView(pg.GraphicsLayoutWidget):
         font.setPointSize(10)
         cbax.setStyle(tickTextOffset=8, tickFont=font)
         self.view.addItem(self.colorbar)
-        QtGui.QGraphicsItemGroup.setTransform(
+        QtWidgets.QGraphicsItemGroup.setTransform(
              self.colorbar, QtGui.QTransform().scale(1, -1))
         cbax.setTicks([ticks.items()])
 
@@ -141,24 +140,24 @@ class NeuronView(pg.GraphicsLayoutWidget):
             i.show_circuit(show)
 
 
-class NeuronItem(QtGui.QGraphicsItemGroup):
+class NeuronItem(QtWidgets.QGraphicsItemGroup):
     def __init__(self):
-        QtGui.QGraphicsItemGroup.__init__(self)
+        QtWidgets.QGraphicsItemGroup.__init__(self)
         self.circuit = None
         self.current = None
 
     def rotate(self, angle):
-        QtGui.QGraphicsItemGroup.setRotation(self, angle)
+        QtWidgets.QGraphicsItemGroup.setRotation(self, angle)
         self.circuit.setRotation(angle)
 
     def translate(self, x, y):
-        QtGui.QGraphicsItemGroup.setTransform(
+        QtWidgets.QGraphicsItemGroup.setTransform(
             self, QtGui.QTransform().fromTranslate(x, y)
         )
         self.circuit.setTransform(QtGui.QTransform().fromTranslate(x, y))
 
     def setVisible(self, v):
-        QtGui.QGraphicsItemGroup.setVisible(self, v)
+        QtWidgets.QGraphicsItemGroup.setVisible(self, v)
         self.circuit.setVisible(v)
 
 
@@ -167,7 +166,7 @@ class Cell(NeuronItem):
         self.key = section.name
         NeuronItem.__init__(self)
 
-        self.soma = QtGui.QGraphicsEllipseItem(
+        self.soma = QtWidgets.QGraphicsEllipseItem(
             QtCore.QRectF(
                 CellPosition.center_x, 
                 CellPosition.center_y, 
@@ -178,7 +177,7 @@ class Cell(NeuronItem):
         self.soma.setPen(pg.mkPen(0.5, width=1, cosmetic=False))
         self.soma.setParentItem(self)
         
-        self.soma2 = QtGui.QGraphicsEllipseItem(
+        self.soma2 = QtWidgets.QGraphicsEllipseItem(
             QtCore.QRectF(
                 CellPosition.center_x - CellPosition.membrane_thickness / 2,
                 CellPosition.center_y - CellPosition.membrane_thickness / 2,
@@ -189,7 +188,7 @@ class Cell(NeuronItem):
         self.soma2.setPen(pg.mkPen(0.5, width=1, cosmetic=False))
         self.soma2.setParentItem(self)
 
-        self.circuit = QtGui.QGraphicsItemGroup()
+        self.circuit = QtWidgets.QGraphicsItemGroup()
 
         # Net current
         self.current = Current(self.key, center=False)
@@ -286,21 +285,21 @@ class Channel(NeuronItem):
                 svg, scale[i], angle=self.angle, translate=transl
             )
         # add a label to the channel
-        label = pg.LabelItem(channel.type, color=pg.mkColor(color),
+        label = pg.LabelItem(channel.type, color=pg.mkColor(f"#{color}"),
             angle=-angle, anchor=[0.5, 0.5])
         label.setParentItem(self)
         transl[1] += 32
         self.set_transform(label, scale[0], angle=self.angle, translate=transl)
 
-        self.bg = QtGui.QGraphicsRectItem(QtCore.QRectF(-5, -10, 10, 20))
+        self.bg = QtWidgets.QGraphicsRectItem(QtCore.QRectF(-5, -10, 10, 20))
         self.bg.setParentItem(self)
         self.bg.setZValue(-1)
-        color = pg.mkColor(color)
+        color = pg.mkColor(f"#{color}")
         self.bg.setBrush(
             pg.mkBrush(color.red() // 2, color.green() // 2, color.blue() // 2, 255)
         )
 
-        self.circuit = QtGui.QGraphicsItemGroup()
+        self.circuit = QtWidgets.QGraphicsItemGroup()
 
         self.current = Current(channel.name, center=False)
         self.current.setParentItem(self.circuit)
@@ -354,9 +353,9 @@ class Channel(NeuronItem):
         self.res.setVisible(show)
 
 
-class Current(QtGui.QGraphicsItemGroup):
+class Current(QtWidgets.QGraphicsItemGroup):
     def __init__(self, channel_name, color="y", center=False):
-        QtGui.QGraphicsItemGroup.__init__(self)
+        QtWidgets.QGraphicsItemGroup.__init__(self)
         self.key = channel_name + ".I"
         self.center = center
         self.length = 20
@@ -427,7 +426,7 @@ class Pipette(NeuronItem):
         path.lineTo(-8, -2)
         path.closeSubpath()
 
-        self.voltage = QtGui.QGraphicsPathItem(path)
+        self.voltage = QtWidgets.QGraphicsPathItem(path)
         self.voltage.setParentItem(self)
         self.voltage.setPen(pg.mkPen(None))
         voltage_transform = QtGui.QTransform()
@@ -435,7 +434,7 @@ class Pipette(NeuronItem):
         self.voltage.setTransform(voltage_transform)
         self.voltage.setZValue(-1)
 
-        self.circuit = QtGui.QGraphicsItemGroup()
+        self.circuit = QtWidgets.QGraphicsItemGroup()
 
        # pipette current indicator
         self.current = Current(self.key)
@@ -479,9 +478,9 @@ class Pipette(NeuronItem):
         self.res.setVisible(show)
 
 
-class Capacitor(QtGui.QGraphicsItemGroup):
+class Capacitor(QtWidgets.QGraphicsItemGroup):
     def __init__(self, l1, l2, w1=10, w2=10, gap=6, pencolor:str="w"):
-        QtGui.QGraphicsItemGroup.__init__(self)
+        QtWidgets.QGraphicsItemGroup.__init__(self)
 
         g2 = gap / 2
         path = QtGui.QPainterPath()
@@ -494,15 +493,15 @@ class Capacitor(QtGui.QGraphicsItemGroup):
         path.moveTo(0, l1 + g2)
         path.lineTo(0, l1 + l2)
 
-        self.line = QtGui.QGraphicsPathItem(path)
+        self.line = QtWidgets.QGraphicsPathItem(path)
         self.line.setBrush(pg.mkBrush(None))
         self.line.setPen(pg.mkPen(pencolor, width=1, cosmetic=False))
         self.line.setParentItem(self)
 
 
-class Battery(QtGui.QGraphicsItemGroup):
+class Battery(QtWidgets.QGraphicsItemGroup):
     def __init__(self, l1, l2, w1=10, w2=10, gap=4, polarity:str="", pencolor:str="w"):
-        QtGui.QGraphicsItemGroup.__init__(self)
+        QtWidgets.QGraphicsItemGroup.__init__(self)
 
         g2 = gap / 2
         path = QtGui.QPainterPath()
@@ -525,13 +524,13 @@ class Battery(QtGui.QGraphicsItemGroup):
         path.moveTo(0, l1 + g2)
         path.lineTo(0, l1 + l2)
 
-        self.line = QtGui.QGraphicsPathItem(path)
+        self.line = QtWidgets.QGraphicsPathItem(path)
         self.line.setBrush(pg.mkBrush(None))
         self.line.setPen(pg.mkPen(pencolor, width=1, cosmetic=False))
         self.line.setParentItem(self)
 
 
-class Resistor(QtGui.QGraphicsItemGroup):
+class Resistor(QtWidgets.QGraphicsItemGroup):
     """Draw a resistor. Lead lengths are l1, l2
        The resistor width is 3, and the height (length)
        is a function of the width, so we get 3 zig-zags
@@ -543,7 +542,7 @@ class Resistor(QtGui.QGraphicsItemGroup):
 
     """
     def __init__(self, l1, l2, pencolor:str="w"):
-        QtGui.QGraphicsItemGroup.__init__(self)
+        QtWidgets.QGraphicsItemGroup.__init__(self)
 
         w = 3
         h = w / 3**0.5
@@ -560,7 +559,7 @@ class Resistor(QtGui.QGraphicsItemGroup):
         path.lineTo(0, y - h)
         path.lineTo(0, l1 + l2)
 
-        self.line = QtGui.QGraphicsPathItem(path)
+        self.line = QtWidgets.QGraphicsPathItem(path)
         self.line.setBrush(pg.mkBrush(None))
         self.line.setPen(pg.mkPen(pencolor, width=1, cosmetic=False))
         self.line.setParentItem(self)

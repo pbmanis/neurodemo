@@ -6,20 +6,20 @@ Luke Campagnola 2015
 
 import numpy as np
 import pyqtgraph as pg
-from pyqtgraph.Qt import QtGui, QtCore
+from pyqtgraph.Qt import QtGui, QtCore, QtWidgets
 import pyqtgraph.parametertree as pt
 from lmfit import Model
 from lmfit.models import ExponentialModel
 
-class TraceAnalyzer(QtGui.QWidget):
+class TraceAnalyzer(QtWidgets.QWidget):
     def __init__(self, seq_plotter):
-        QtGui.QWidget.__init__(self)
+        QtWidgets.QWidget.__init__(self)
         self.plotter = seq_plotter
         
-        self.layout = QtGui.QGridLayout()
+        self.layout = QtWidgets.QGridLayout()
         self.layout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(self.layout)
-        self.hsplitter = QtGui.QSplitter(QtCore.Qt.Orientation.Horizontal)
+        self.hsplitter = QtWidgets.QSplitter(QtCore.Qt.Orientation.Horizontal)
         self.layout.addWidget(self.hsplitter)
         
         self.ptree = pt.ParameterTree(showHeader=False)
@@ -210,35 +210,35 @@ class TraceAnalyzerParameter(pt.parameterTypes.GroupParameter):
         print(result.params)
         return result.params['tau'] # fit[0][2]       
 
-class EvalPlotter(QtGui.QWidget):
+class EvalPlotter(QtWidgets.QWidget):
     def __init__(self):
         self.held_plots = []
         self.last_curve = None
         self.held_index = 0
         self.cursor_visible = False
         
-        QtGui.QWidget.__init__(self)
-        self.layout = QtGui.QGridLayout()
+        QtWidgets.QWidget.__init__(self)
+        self.layout = QtWidgets.QGridLayout()
         self.layout.setContentsMargins(10, 10, 10, 10)
         self.setLayout(self.layout)
         
-        self.x_label = QtGui.QLabel('X data')
-        self.y_label = QtGui.QLabel('Y data')
+        self.x_label = QtWidgets.QLabel('X data')
+        self.y_label = QtWidgets.QLabel('Y data')
         self.layout.addWidget(self.x_label, 0, 0)
         self.layout.addWidget(self.y_label, 1, 0)
 
-        self.x_code = QtGui.QLineEdit('cmd')
-        self.y_code = QtGui.QLineEdit()
+        self.x_code = QtWidgets.QLineEdit('cmd')
+        self.y_code = QtWidgets.QLineEdit()
         self.layout.addWidget(self.x_code, 0, 1, 1, 2)
         self.layout.addWidget(self.y_code, 1, 1, 1, 2)
         
-        self.x_units_label = QtGui.QLabel('units')
-        self.y_units_label = QtGui.QLabel('units')
+        self.x_units_label = QtWidgets.QLabel('units')
+        self.y_units_label = QtWidgets.QLabel('units')
         self.layout.addWidget(self.x_units_label, 0, 3)
         self.layout.addWidget(self.y_units_label, 1, 3)
         
-        self.x_units_text = QtGui.QLineEdit('A')
-        self.y_units_text = QtGui.QLineEdit()
+        self.x_units_text = QtWidgets.QLineEdit('A')
+        self.y_units_text = QtWidgets.QLineEdit()
         self.layout.addWidget(self.x_units_text, 0, 3)
         self.layout.addWidget(self.y_units_text, 1, 3)
         self.layout.setColumnStretch(0, 1)
@@ -249,13 +249,13 @@ class EvalPlotter(QtGui.QWidget):
         self.plot = pg.PlotWidget()
         self.layout.addWidget(self.plot, 2, 0, 1, -1)
         self.layout.setColumnStretch(1, 1)
-        self.hold_plot_btn = QtGui.QPushButton('Hold Plot')
+        self.hold_plot_btn = QtWidgets.QPushButton('Hold Plot')
         self.layout.addWidget(self.hold_plot_btn, 3, 0, 1, 1)
-        self.clear_plot_btn = QtGui.QPushButton('Clear Plot')
+        self.clear_plot_btn = QtWidgets.QPushButton('Clear Plot')
         self.layout.addWidget(self.clear_plot_btn, 3, 1, 1, 2)
-        self.replot_btn = QtGui.QPushButton('Replot')
+        self.replot_btn = QtWidgets.QPushButton('Replot')
         self.layout.addWidget(self.replot_btn, 3, 3, 1, 1)
-        self.show_cursor_check = QtGui.QCheckBox('Enable Cursor')
+        self.show_cursor_check = QtWidgets.QCheckBox('Enable Cursor')
         self.show_cursor_check.setCheckState(QtCore.Qt.CheckState.Unchecked)
         self.layout.addWidget(self.show_cursor_check, 3, 4, 1, 1)
         
