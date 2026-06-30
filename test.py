@@ -113,10 +113,8 @@ def main():
     Tester.set_window()
     Tester.run(args.simtype)
     Tester.show()
-    print("show called")
     import sys
     if sys.flags.interactive == 0:
-        print("excc")
         app.exec()
 if __name__ == "__main__":
     main()
