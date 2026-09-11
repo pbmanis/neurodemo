@@ -20,6 +20,9 @@ from neurodemo.channelparam import ChannelParameter
 from neurodemo.channelparam import IonConcentrations
 from neurodemo.clampparam import ClampParameter
 from neurodemo.neuronview import NeuronView
+from neurodemo.models import ALL_CHANNEL_CLASSES, MODELS
+from neurodemo.channels.common import Leak
+from neurodemo.kinetics_window import KineticsWindow
 
 pg.setConfigOption('antialias', True)
 
@@ -99,11 +102,21 @@ class DemoWindow(QtWidgets.QWidget):
         self.lgna.enabled = False
         self.lgkf.enabled = False
         self.lgks.enabled = False
-        
+
+        self.mhna = self.neuron.add(self.ndemo.MHNa())
+        self.mhk  = self.neuron.add(self.ndemo.MHK())
+        self.mhcat = self.neuron.add(self.ndemo.MHCaT())
+        self.mhih = self.neuron.add(self.ndemo.MHIh())
+        self.mhna.enabled  = False
+        self.mhk.enabled   = False
+        self.mhcat.enabled = False
+        self.mhih.enabled  = False
+
         self.clamp = self.neuron.add(self.ndemo.PatchClamp(mode='ic'))
         
-        mechanisms = [self.clamp, self.hhna, self.leak, self.hhk, self.dexh, 
-            self.ka, self.cat, self.cal, self.lgna, self.lgkf, self.lgks]
+        mechanisms = [self.clamp, self.hhna, self.leak, self.hhk, self.dexh,
+            self.ka, self.cat, self.cal, self.lgna, self.lgkf, self.lgks,
+            self.mhna, self.mhk, self.mhcat, self.mhih]
         # loop to run the simulation indefinitely
         self.runner = self.ndemo.SimRunner(self.sim)
         self.runner.set_speed(0.2)
@@ -155,7 +168,18 @@ class DemoWindow(QtWidgets.QWidget):
             ChannelParameter(self.lgna),
             ChannelParameter(self.lgkf),
             ChannelParameter(self.lgks),
+            ChannelParameter(self.mhna),
+            ChannelParameter(self.mhk),
+            ChannelParameter(self.mhcat),
+            ChannelParameter(self.mhih),
         ]
+
+        # Lookup maps keyed by channel class for use in load_preset
+        _channels = [self.leak, self.hhna, self.hhk, self.dexh, self.ka,
+                     self.cal, self.cat, self.lgna, self.lgkf, self.lgks,
+                     self.mhna, self.mhk, self.mhcat, self.mhih]
+        self._channel_by_cls = {type(ch): ch for ch in _channels}
+        self._param_by_cls   = {type(cp.channel): cp for cp in self.channel_params}
 
         for ch in self.channel_params:
             ch.plots_changed.connect(self.plots_changed)
@@ -174,7 +198,7 @@ class DemoWindow(QtWidgets.QWidget):
         self.splitter.setSizes([300, 300, 800])
 
         self.params = pt.Parameter.create(name='Parameters', type='group', children=[
-            dict(name='Preset', type='list', value='HH AP', values=['Passive', 'HH AP', 'LG AP']),
+            dict(name='Preset', type='list', value='HH AP', values=list(MODELS)),
             dict(name='Run/Stop', type='action', value=False),
             dict(name="dt", type='float', value=20e-6, limits=[2e-6, 200e-6], suffix='s', siPrefix=True),
             dict(name="Method", type='list', value="solve_ivp", values=['solve_ivp', 'odeint']),
@@ -188,6 +212,11 @@ class DemoWindow(QtWidgets.QWidget):
             dict(name='Cell Schematic', type='bool', value=True, children=[
                 dict(name='Show Circuit', type='bool', value=False),
             ]),
+            dict(name='Kinetics', type='group', expanded=False, children=[
+                dict(name='Channel', type='list', value='', values=[]),
+                dict(name='Plot Selected', type='action'),
+                dict(name='Plot All Active', type='action'),
+            ]),
             # self.clamp_param,  # now in the adjacent window
             dict(name='Ion Channels', type='group', children=self.channel_params),
         ])
@@ -199,6 +228,11 @@ class DemoWindow(QtWidgets.QWidget):
         rsbutton.setCheckable(True)  # toggle
         rsbutton.setStyleSheet("QPushButton { background-color: #225522}"
                                "QPushButton:checked { background-color: #882222}" )
+
+        # Keep kinetics windows alive (prevents GC) and cache channel lookup
+        self._kinetics_windows = []
+        self._kinetics_chan_options = {}
+        self._update_kinetics_channel_list()
 
         # self.start()  # if autostart desired
 
@@ -225,6 +259,11 @@ class DemoWindow(QtWidgets.QWidget):
                     self.stop()
                 else:
                     self.start()
+            elif path[0] == "Kinetics":
+                if path[1] == "Plot Selected":
+                    self.plot_kinetics_selected()
+                elif path[1] == "Plot All Active":
+                    self.plot_kinetics_all()
             if change != 'value':
                 continue
 
@@ -244,6 +283,7 @@ class DemoWindow(QtWidgets.QWidget):
                     ion.updateErev(self.sim.temp)
             elif param is self.params.child('Capacitance'):
                 self.neuron.cap = val
+                self.neuron.area = val / self.neuron.cap_bar   # gmax = gbar*area must stay consistent
             elif param is self.params.child('Capacitance', 'Plot Current'):
                 if val:
                     self.add_plot('soma.I', "Membrane Capacitance", 'I')
@@ -424,7 +464,7 @@ class DemoWindow(QtWidgets.QWidget):
 
     def fullscreen(self):
         if self.fullscreen_widget is None:
-            w = QtGui.QApplication.focusWidget()
+            w = QtWidgets.QApplication.focusWidget()
             ind = self.plot_splitter.indexOf(w)
             if ind < 0:
                 return
@@ -551,80 +591,107 @@ class DemoWindow(QtWidgets.QWidget):
         self.params.child('Ions', 'Ca').setValue(False)
 
     def load_preset(self, preset):
-        """Load preset configurations for the simulations.
+        """Load a preset from the MODELS registry.
 
         Args:
-            preset (string): which preset values to select and load
+            preset (str): key in MODELS dict (e.g. 'Passive', 'HH AP', 'LG AP').
 
         Raises:
-            ValueError: if preset is not known.
+            ValueError: if preset is not a known key.
         """
-        if preset == 'Passive':
-            self.params['Temp'] = 6.3
-            self.params['Speed'] = 1.0
-            self.clamp_param['Plot Current'] = False
-            self.clamp_param['Plot Voltage'] = False
-            chans = self.params.child('Ion Channels')
-            chans['soma.Ileak'] = True
-            chans['soma.Ileak', 'Erev'] = 0
-            chans['soma.Ileak', "Gmax"] = 1*NU.nS
-            chans['soma.INa'] = False
-            chans['soma.ICaL'] = False
-            chans['soma.ICaT'] = False
-            chans['soma.IKA'] = False
-            chans['soma.IK'] = False
-            chans['soma.IH'] = False
-            chans['soma.INa1'] = False
-            chans['soma.IKf'] = False
-            chans['soma.IKs'] = False
-            self.set_ions_off()
-            self.neuron.set_default_erev()
+        if preset not in MODELS:
+            raise ValueError(f"Unknown preset {preset!r}. Known: {list(MODELS)}")
 
-        elif preset == 'HH AP':
-            self.params['Temp'] = 6.3
-            self.params['Speed'] = 1.0
-            chans = self.params.child('Ion Channels')
-            chans['soma.Ileak'] = True
-            chans['soma.Ileak', 'Erev'] = -55*NU.mV
-            chans['soma.Ileak', "Gmax"] = 1*NU.nS
-            chans['soma.INa'] = True
-            chans['soma.IK'] = True
-            chans['soma.ICaL'] = False
-            chans['soma.ICaT'] = False
-            chans['soma.IKA'] = False
-            chans['soma.IH'] = False
-            chans['soma.INa1'] = False
-            chans['soma.IKf'] = False
-            chans['soma.IKs'] = False
-            self.set_ions_off()
-            self.set_hh_erev()
+        config = MODELS[preset]
+        active_cls = {spec.cls for spec in config.channels}
 
-        elif preset == 'LG AP':
-            self.params['Temp'] = 37
-            self.params['Speed'] = 1.0
-            chans = self.params.child('Ion Channels')
-            chans['soma.Ileak'] = True
-            chans['soma.Ileak', 'Erev'] = -70*NU.mV
-            chans['soma.Ileak', 'Gmax'] = 2.5*NU.nS
-            chans['soma.INa'] = False
-            chans['soma.IK'] = False
-            chans['soma.IH'] = False
-            chans['soma.ICaL'] = False
-            chans['soma.ICaT'] = False
-            chans['soma.IKA'] = False
+        self.params['Temp'] = config.temp
+        self.params['Speed'] = config.speed
+        self.params['Capacitance'] = config.cap
+        self.set_ions_off()
 
-            chans['soma.INa1'] = True
-            chans['soma.INa1', "Erev"] = 74 * NU.mV
-            chans['soma.IKf'] = True
-            chans['soma.IKf', "Erev"] = -90 * NU.mV
-            chans['soma.IKs'] = True
-            chans['soma.IKs', "Erev"] = -90 * NU.mV
-            self.set_ions_off()
-            self.set_lg_erev()
-        else:
-            raise ValueError("Preset is not one of the implemented values")
-            
+        # Build a lookup from class → ChannelSpec for this preset
+        spec_by_cls = {spec.cls: spec for spec in config.channels}
+
+        for cls in ALL_CHANNEL_CLASSES:
+            cp = self._param_by_cls.get(cls)
+            if cp is None:
+                continue
+            if cls in active_cls:
+                spec = spec_by_cls[cls]
+                cp.setOpts(visible=True)
+                cp.setValue(spec.enabled)
+                for key, val in spec.defaults.items():
+                    cp.child(key).setValue(val)
+            else:
+                cp.setOpts(visible=False)
+                cp.setValue(False)
+
+        # Call model-specific erev setup if defined
+        if config.setup_erev:
+            getattr(self, config.setup_erev)()
+
+        # Reflect enabled state immediately in the cell schematic
+        self.neuronview.update_channel_visibility()
+
         self.params['Preset'] = preset
+
+        # Rebuild kinetics channel list to match the new preset
+        self._update_kinetics_channel_list()
+
+    # ------------------------------------------------------------------
+    # Kinetics helpers
+    # ------------------------------------------------------------------
+
+    def _update_kinetics_channel_list(self):
+        """Rebuild the Kinetics > Channel dropdown from currently visible non-Leak channels."""
+        options = {}
+        for cp in self.channel_params:
+            if not cp.opts.get('visible', True):
+                continue
+            ch = cp.channel
+            if isinstance(ch, Leak) or len(ch.difeq_state()) == 0:
+                continue
+            options[type(ch).__name__] = ch
+        self._kinetics_chan_options = options
+        ch_list = list(options.keys())
+        p = self.params.child('Kinetics', 'Channel')
+        p.setLimits(ch_list)
+        if ch_list:
+            p.setValue(ch_list[0])
+
+    def plot_kinetics_selected(self):
+        """Open a kinetics window for the channel chosen in the Kinetics > Channel list."""
+        name = self.params['Kinetics', 'Channel']
+        ch = self._kinetics_chan_options.get(name)
+        if ch is None:
+            return
+        temp = self.sim.temp
+        win = KineticsWindow(
+            [ch], self.neuron,
+            title=f'{type(ch).__name__} kinetics  (T = {temp:.1f}°C)',
+        )
+        self._kinetics_windows.append(win)
+
+    def plot_kinetics_all(self):
+        """Open a kinetics window for all enabled non-Leak channels in the current model."""
+        active = [
+            cp.channel
+            for cp in self.channel_params
+            if cp.channel.enabled
+            and cp.opts.get('visible', True)
+            and not isinstance(cp.channel, Leak)
+            and len(cp.channel.difeq_state()) > 0
+        ]
+        if not active:
+            return
+        preset = self.params['Preset']
+        temp   = self.sim.temp
+        win = KineticsWindow(
+            active, self.neuron,
+            title=f'{preset}  —  all active channels  (T = {temp:.1f}°C)',
+        )
+        self._kinetics_windows.append(win)
 
     def closeEvent(self, ev):
         self.runner.stop()

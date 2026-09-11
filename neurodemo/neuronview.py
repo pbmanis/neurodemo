@@ -134,6 +134,15 @@ class NeuronView(pg.GraphicsLayoutWidget):
         for item in self.items:
             item.update_state(state)
 
+    def update_channel_visibility(self):
+        """Immediately show/hide channel icons to match channel.enabled state.
+
+        Called after a preset change so the schematic updates without needing
+        a simulation run first.
+        """
+        for item in self.channels:
+            item.setVisible(item.channel.enabled)
+
     def show_circuit(self, show):
         self.mask.setVisible(show)
         for i in self.items:
@@ -253,22 +262,28 @@ class Channel(NeuronItem):
         self.angle = angle
         self.svg_items = [None, None]
         color = {
-            "INa": "dd0000",  # HH
-            "IK": "0000dd",   # HH
-            "Ileak": "00dd00",  # HH
-            "IH": "aa00aa",  # Not in HH model, but included here
-            "INa1": "880000",  # LG
-            "IKf": "0088ff", # LG
-            "IKs": "8800ff", # LG
+            "INa":   "dd0000",  # HH / MH Na
+            "IK":    "0000dd",  # HH / MH K
+            "Ileak": "00dd00",
+            "IH":    "aa00aa",  # Destexhe / MH Ih
+            "IKA":   "0088aa",  # extra KA
+            "ICaL":  "ddaa00",  # extra L-type Ca
+            "ICaT":  "dd6600",  # extra / MH T-type Ca
+            "INa1":  "880000",  # LG Na
+            "IKf":   "0088ff",  # LG Kfast
+            "IKs":   "8800ff",  # LG Kslow
         }.get(channel.type, "999999")
         polarity = {
-            "INa": "-",  # HH
-            "IK": "+",   # HH
-            "Ileak": "+",  # HH
-            "IH": "-",  # Not in HH model, but included here
-            "INa1": "-",  # LG
-            "IKf": "+", # LG
-            "IKs": "+", # LG
+            "INa":   "-",
+            "IK":    "+",
+            "Ileak": "+",
+            "IH":    "-",
+            "IKA":   "+",
+            "ICaL":  "-",
+            "ICaT":  "-",
+            "INa1":  "-",
+            "IKf":   "+",
+            "IKs":   "+",
         }.get(channel.type, "")
 
         NeuronItem.__init__(self)
