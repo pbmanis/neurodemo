@@ -6,6 +6,10 @@ neurodemo_venv/*
 neurodemo.egg-info/*
 build/*
 dist/*
+dist_m1/*
+build_m1/*
+dist_exe/*
+build_exe/*
 demo.dist/*
 demo.build/*
 demo.onefile-build/*

@@ -1,14 +1,12 @@
 # make Apple Silicon app
 #
-# The next 3 lines can be skipped if you
-# do not need to update the code
-rm -rf build dist
-python setup_m1.py py2app
-mkdir -p dist/dmg
+rm -rf build_m1 dist_m1
+uv run --extra dev pyinstaller setup_m1.spec --distpath dist_m1 --workpath build_m1
+mkdir -p dist_m1/dmg
 
-cp -r "dist/neurodemo.app" dist/dmg
+cp -r "dist_m1/neurodemo.app" dist_m1/dmg
 # If the DMG already exists, delete it.
-test -f "dist/neurodemo.dmg" && rm "dist/neurodemo.dmg"
+test -f "dist_m1/neurodemo_M1.dmg" && rm "dist_m1/neurodemo_M1.dmg"
 # get create-dmg from homebrew
 create-dmg \
 --volname "neurodemo" \
@@ -19,8 +17,5 @@ create-dmg \
 --icon "neurodemo.app" 100 100 \
 --hide-extension "neurodemo.app" \
 --app-drop-link 250 100 \
-"dist/neurodemo_M1.dmg" \
-"dist/dmg/"
-
-# hdiutil create -srcFolder dist -o dmg/neurodemo
-
+"dist_m1/neurodemo_M1.dmg" \
+"dist_m1/dmg/"
