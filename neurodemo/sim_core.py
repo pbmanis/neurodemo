@@ -10,7 +10,6 @@ from collections import OrderedDict
 import numpy as np
 import scipy.integrate
 import neurodemo.units as NU
-import warnings
 
 
 class Sim(object):
