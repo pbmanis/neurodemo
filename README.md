@@ -8,6 +8,7 @@ This is an educational simulation of a simple neuron.
 
 * Hodgkin & Huxley channels
 * Lewis & Gerstner (2002) cortical channels
+* McCormick & Huguenard (1992) thalamic model.
 * Destexhe 1993 Ih channel
 * Current/voltage clamp electrode with access resistance
 * Diagram of cell membrane with circuit schematic
